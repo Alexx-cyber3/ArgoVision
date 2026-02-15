@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2 class="fw-bold text-white mb-4">Diagnosis Logs</h2>
+
+<div class="card border-0">
+    <div class="table-responsive">
+        <table class="table table-dark table-hover mb-0 align-middle">
+            <thead class="bg-black text-uppercase small text-muted">
+                <tr>
+                    <th class="py-3 ps-4">Specimen</th>
+                    <th class="py-3">Disease Identified</th>
+                    <th class="py-3">Status</th>
+                    <th class="py-3">Date Processed</th>
+                    <th class="py-3 text-end pe-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pred in predictions %}
+                <tr>
+                    <td class="ps-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <img src="{{ url_for('static', filename='uploads/' + pred.image_path) }}" class="rounded" width="48" height="48" style="object-fit: cover;">
+                            <div>
+                                <span class="fw-bold d-block">{{ pred.plant_part }}</span>
+                                <small class="text-muted">ID: {{ pred.id }} // {% if pred.image_hash %}Hash: {{ pred.image_hash[:8] }}{% else %}LEGACY_DATA{% endif %}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        {{ pred.disease }}
+                        {% if pred.is_verified and pred.correct_disease != pred.disease %}
+                        <span class="text-warning small d-block">Corrected to: {{ pred.correct_disease }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if pred.is_verified %}
+                        <span class="badge bg-success-subtle text-success border border-success">Verified</span>
+                        {% else %}
+                        <span class="badge bg-secondary-subtle text-muted border border-secondary">Pending</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-muted">{{ pred.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td class="text-end pe-4">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="/verify-view/{{ pred.id }}" class="btn btn-sm btn-outline-info">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="/delete/{{ pred.id }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Purge this record?')">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center py-5 text-muted">
+                        <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                        No records found in database.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
