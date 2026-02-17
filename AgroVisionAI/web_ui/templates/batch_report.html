@@ -1,0 +1,81 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row g-4">
+    <!-- Header Summary -->
+    <div class="col-12">
+        <div class="card p-4 border-0 shadow-lg bg-dark">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bold text-white mb-1">Batch Scan Report</h2>
+                    <p class="text-muted">Batch ID: <span class="font-monospace text-info">#{{ batch_id }}</span> // {{ results[0].timestamp.strftime('%Y-%m-%d %H:%M') }}</p>
+                </div>
+                <div class="text-end">
+                    <button onclick="window.print()" class="btn btn-outline-light me-2">Export Batch PDF</button>
+                    <a href="/" class="btn btn-primary">New Analysis</a>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="p-3 rounded bg-black border border-secondary text-center">
+                        <small class="text-muted d-block mb-1">Total Specimens</small>
+                        <h2 class="fw-bold text-white mb-0">{{ summary.total }}</h2>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="p-3 rounded bg-black border border-secondary text-center">
+                        <small class="text-muted d-block mb-1">Healthy</small>
+                        <h2 class="fw-bold text-success mb-0">{{ summary.healthy }}</h2>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="p-3 rounded bg-black border border-secondary text-center">
+                        <small class="text-muted d-block mb-1">Infected</small>
+                        <h2 class="fw-bold text-danger mb-0">{{ summary.infected }}</h2>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="p-3 rounded bg-black border border-secondary text-center">
+                        <small class="text-muted d-block mb-1">Avg. Health Rate</small>
+                        <h2 class="fw-bold text-info mb-0">{{ summary.health_rate|round(1) }}%</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Individual Results List -->
+    <div class="col-12">
+        <h4 class="text-white mb-3 fw-bold">Consolidated Specimen Analysis</h4>
+        <div class="row g-3">
+            {% for res in results %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 bg-dark border-secondary overflow-hidden">
+                    <div class="position-relative">
+                        <img src="{{ url_for('static', filename='uploads/' + res.image_path) }}" class="card-img-top" style="height: 180px; object-fit: cover;">
+                        <span class="position-absolute top-0 end-0 m-2 badge {{ 'bg-success' if 'healthy' in res.disease.lower() else 'bg-danger' }}">
+                            {{ res.disease }}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-3">
+                            <small class="text-muted">{{ res.plant_part }}</small>
+                            <small class="text-info font-monospace">{{ (res.confidence * 100)|round(1) }}% Conf.</small>
+                        </div>
+                        
+                        <h6 class="text-primary small fw-bold text-uppercase mb-2">Prescription Protocol</h6>
+                        {% set pres = res.prescription_json|from_json %}
+                        <div class="p-2 bg-black rounded border border-secondary mb-3">
+                            <div class="small text-white fw-bold mb-1">{{ pres.regimen }}</div>
+                            <div class="small text-muted">{{ pres.chemical }} // {{ pres.dosage }}</div>
+                        </div>
+                        
+                        <a href="/verify-view/{{ res.id }}" class="btn btn-sm btn-outline-info w-100">View Deep Analytics</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

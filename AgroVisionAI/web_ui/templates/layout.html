@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgroVision AI | Enterprise</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
+    <!-- Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --primary-color: #00E676; /* Neon Green */
+            --bg-dark: #121212;
+            --bg-card: #1E1E1E;
+        }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-dark);
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: #181818;
+            border-right: 1px solid #333;
+            padding: 20px;
+            z-index: 1000;
+        }
+
+        .brand-logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-link {
+            color: #aaa;
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-bottom: 5px;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: rgba(0, 230, 118, 0.1);
+            color: var(--primary-color);
+        }
+
+        .nav-link i { margin-right: 10px; font-size: 1.1rem; }
+
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 30px;
+        }
+
+        /* Cards */
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid #333;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: #000;
+            font-weight: 600;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 8px;
+        }
+        .btn-primary:hover { background-color: #00c853; color: #000; }
+
+        .severity-high { color: #ff5252; }
+        .severity-medium { color: #ffab40; }
+        .severity-low { color: #69f0ae; }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="brand-logo">
+            <i class="bi bi-cpu-fill"></i> AgroVision
+        </div>
+        <nav class="nav flex-column">
+            <a class="nav-link {{ 'active' if request.path == '/' else '' }}" href="/">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+            <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#scanModal">
+                <i class="bi bi-camera"></i> New Scan
+            </a>
+            <a class="nav-link {{ 'active' if request.path == '/history' else '' }}" href="/history">
+                <i class="bi bi-database"></i> History Logs
+            </a>
+            <div class="mt-4 text-uppercase text-muted small fw-bold px-3">System</div>
+            <a class="nav-link" href="/logout"><i class="bi bi-box-arrow-left"></i> Logout</a>
+        </nav>
+        
+        <div class="mt-auto pt-5">
+            <div class="card bg-dark border-secondary p-3">
+                <small class="text-muted d-block">System Status</small>
+                <div class="d-flex align-items-center mt-2">
+                    <span class="badge bg-success rounded-circle p-1 me-2"> </span>
+                    <span class="fw-bold text-white">Online</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scanning Overlay Animation -->
+    <div id="scan-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9999; align-items:center; justify-content:center; flex-direction:column;">
+        <div class="spinner-border text-success" style="width: 4rem; height: 4rem;" role="status"></div>
+        <h3 class="text-white mt-4 fw-light">Analyzing Specimen...</h3>
+        <p class="text-success font-monospace" id="scan-text">Initializing Neural Engine...</p>
+        <div class="progress mt-3" style="width: 300px; height: 4px; background: #333;">
+            <div class="progress-bar bg-success" id="scan-progress" role="progressbar" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Header -->
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <div>
+                <h2 class="fw-bold text-white">Overview</h2>
+                <p class="text-muted">Welcome back, Chief Agronomist.</p>
+            </div>
+            <div class="d-flex gap-3">
+                 <button class="btn btn-outline-light"><i class="bi bi-bell"></i></button>
+                 <div class="d-flex align-items-center gap-2">
+                    <img src="https://ui-avatars.com/api/?name=Admin&background=random" class="rounded-circle" width="40">
+                    <div class="text-end d-none d-md-block">
+                        <small class="d-block fw-bold text-white">{{ session.get('user', 'Admin') }}</small>
+                        <small class="text-muted" style="font-size: 0.7rem;">Super User</small>
+                    </div>
+                 </div>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-info alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Scan Modal (Global Access) -->
+    <div class="modal fade" id="scanModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content bg-card border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-white">Start New Diagnosis</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                     <ul class="nav nav-tabs nav-fill border-secondary" id="myTab" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active bg-transparent text-white border-0 py-3" data-bs-toggle="tab" data-bs-target="#upload" type="button">Upload File</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link bg-transparent text-white border-0 py-3" data-bs-toggle="tab" data-bs-target="#camera" type="button">Live Camera</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content p-4">
+                        <!-- Upload -->
+                        <div class="tab-pane fade show active" id="upload">
+                            <form action="/predict" method="post" enctype="multipart/form-data" class="text-center py-4">
+                                <div class="mb-4">
+                                    <i class="bi bi-cloud-upload display-1 text-muted"></i>
+                                    <p class="mt-3 text-muted">Drag & drop or click to upload plant image(s)</p>
+                                    <small class="text-info d-block mb-3">BATCH_MODE ENABLED: Select multiple files for consolidated report.</small>
+                                    <input class="form-control bg-dark text-white border-secondary w-75 mx-auto" type="file" name="file" accept="image/*" multiple required>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-50">Initiate Analysis</button>
+                            </form>
+                        </div>
+                        <!-- Camera -->
+                        <div class="tab-pane fade" id="camera">
+                            <div class="text-center">
+                                <video id="modal-video" class="w-100 rounded mb-3 bg-black" style="height:300px; object-fit: cover;"></video>
+                                <canvas id="modal-canvas" style="display:none;"></canvas>
+                                <button id="modal-start-cam" class="btn btn-outline-light mb-2">Activate Camera</button>
+                                <button id="modal-capture" class="btn btn-primary px-5" style="display:none;">Capture</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // --- Scanning Simulation Logic ---
+        function startScanSim(formToSubmit) {
+            const overlay = document.getElementById('scan-overlay');
+            const text = document.getElementById('scan-text');
+            const progress = document.getElementById('scan-progress');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('scanModal'));
+            
+            if(modal) modal.hide();
+            overlay.style.display = 'flex';
+            
+            const steps = [
+                { t: "Preprocessing Image...", p: 20 },
+                { t: "Extracting Features (Conv2D)...", p: 45 },
+                { t: "Classifying Plant Part...", p: 70 },
+                { t: "Detecting Anomalies...", p: 90 },
+                { t: "Finalizing Report...", p: 100 }
+            ];
+            
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i < steps.length) {
+                    text.innerText = steps[i].t;
+                    progress.style.width = steps[i].p + "%";
+                    i++;
+                } else {
+                    clearInterval(interval);
+                    if(formToSubmit.tagName === 'FORM') formToSubmit.submit();
+                }
+            }, 600); // 3 seconds total delay for "Realism"
+        }
+
+        document.querySelector('form[action="/predict"]').addEventListener('submit', function(e) {
+            e.preventDefault();
+            startScanSim(this);
+        });
+
+        // Global Camera Logic for Modal
+        const mVideo = document.getElementById('modal-video');
+        const mCanvas = document.getElementById('modal-canvas');
+        const mStartBtn = document.getElementById('modal-start-cam');
+        const mCaptureBtn = document.getElementById('modal-capture');
+
+        mStartBtn.addEventListener('click', async () => {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert("Camera Access Error: Your browser or connection (non-HTTPS) does not support camera access. Please use a modern browser or ensure you are using HTTPS.");
+                return;
+            }
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                mVideo.srcObject = stream;
+                mVideo.play();
+                mStartBtn.style.display = 'none';
+                mCaptureBtn.style.display = 'inline-block';
+            } catch (err) { alert("Camera Access Denied or Error: " + err); }
+        });
+
+        mCaptureBtn.addEventListener('click', () => {
+            const ctx = mCanvas.getContext('2d');
+            mCanvas.width = mVideo.videoWidth;
+            mCanvas.height = mVideo.videoHeight;
+            ctx.drawImage(mVideo, 0, 0);
+            const data = mCanvas.toDataURL('image/jpeg');
+            
+            // Post form
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/predict-camera';
+            const inp = document.createElement('input');
+            inp.type = 'hidden'; inp.name = 'camera_data'; inp.value = data;
+            form.appendChild(inp);
+            document.body.appendChild(form);
+            
+            // Trigger Animation instead of immediate submit
+            startScanSim(form);
+        });
+    </script>
+</body>
+</html>
